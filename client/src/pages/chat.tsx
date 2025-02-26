@@ -11,7 +11,7 @@ const DEFAULT_USERNAME = "user";
 export default function Chat() {
   const [, setLocation] = useLocation();
   const params = useParams<{ uuid?: string }>();
-  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<number>(1); // Initialize with default chat ID
 
   const { data: chats } = useQuery<ChatType[]>({
     queryKey: ["/api/chats"],
@@ -34,12 +34,14 @@ export default function Chat() {
   useEffect(() => {
     if (selectedChat) {
       setSelectedChatId(selectedChat.id);
+    } else if (chats?.length && !params.uuid) {
+      setSelectedChatId(chats[0].id);
     }
-  }, [selectedChat]);
+  }, [selectedChat, chats, params.uuid]);
 
   const { data: messages, isError } = useQuery<Message[]>({
     queryKey: [`/api/chats/${selectedChatId}/messages`],
-    enabled: !!selectedChatId,
+    enabled: selectedChatId > 0,
   });
 
   return (
@@ -56,7 +58,9 @@ export default function Chat() {
 
       <div className="flex-1 flex flex-col">
         <header className="border-b p-4">
-          <h1 className="text-2xl font-bold">Chat with AI</h1>
+          <h1 className="text-2xl font-bold">
+            {selectedChat?.title || "Chat with AI"}
+          </h1>
         </header>
 
         <main className="flex-1 overflow-hidden flex flex-col">
@@ -65,9 +69,7 @@ export default function Chat() {
           ) : (
             <MessageList messages={messages || []} />
           )}
-          {selectedChatId && (
-            <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
-          )}
+          <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
         </main>
       </div>
     </div>

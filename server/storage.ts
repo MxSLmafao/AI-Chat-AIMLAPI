@@ -40,7 +40,7 @@ export class MemStorage implements IStorage {
       id: this.currentChatId++,
       uuid: uuidv4(),
       title: chat.title,
-      model: chat.model,
+      model: chat.model || "gpt-4o-mini", // Provide default value
       createdAt: new Date()
     };
     this.chats.push(newChat);
@@ -80,13 +80,17 @@ export class MemStorage implements IStorage {
   }
 
   async insertMessage(message: InsertMessage): Promise<Message> {
+    if (!message.chatId) {
+      throw new Error("chatId is required");
+    }
+
     const newMessage: Message = {
       id: this.currentMessageId++,
       chatId: message.chatId,
       content: message.content,
       role: message.role,
       username: message.username,
-      model: message.model,
+      model: message.model || "gpt-4o-mini", // Provide default value
       timestamp: new Date()
     };
     this.messages.push(newMessage);

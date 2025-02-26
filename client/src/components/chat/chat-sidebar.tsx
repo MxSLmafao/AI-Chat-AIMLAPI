@@ -217,7 +217,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
                   <DropdownMenuItem onClick={() => handleRenameClick(chat)}>
                     Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-destructive"
                     onClick={() => deleteChatMutation.mutate(chat.id)}
                   >
