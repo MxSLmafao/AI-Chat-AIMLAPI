@@ -1,6 +1,7 @@
 import { Message } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Bot } from "lucide-react";
+import { MessageFormatter } from "./message-formatter";
 
 interface MessageListProps {
   messages: Message[];
@@ -33,7 +34,10 @@ export function MessageList({ messages }: MessageListProps) {
                   <span className="text-xs opacity-70">via {message.model}</span>
                 </div>
               )}
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <MessageFormatter 
+                content={message.content}
+                className={message.role === "assistant" ? "text-secondary-foreground" : "text-primary-foreground"}
+              />
             </div>
           </div>
         ))}
