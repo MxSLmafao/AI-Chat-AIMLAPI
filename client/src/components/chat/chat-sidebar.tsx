@@ -4,7 +4,7 @@ import { Chat } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, MessageSquare, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -60,9 +60,9 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
           className="h-8 w-8"
         >
           {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <Menu className="h-4 w-4" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <X className="h-4 w-4" />
           )}
         </Button>
       </div>
