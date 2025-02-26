@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { sendMessageSchema, insertChatSchema } from "@shared/schema";
 import rateLimit from "express-rate-limit";
@@ -23,6 +24,35 @@ const limiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express) {
+  const httpServer = createServer(app);
+
+  // Initialize WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  // Handle WebSocket connections
+  wss.on('connection', (ws) => {
+    console.log('Client connected');
+
+    // Send periodic pings to keep connection alive
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send('ping');
+      }
+    }, 30000);
+
+    ws.on('close', () => {
+      console.log('Client disconnected');
+      clearInterval(pingInterval);
+    });
+
+    ws.on('message', (message) => {
+      if (message.toString() === 'pong') {
+        // Received pong from client, connection is alive
+        console.log('Received pong from client');
+      }
+    });
+  });
+
   // Chat routes
   app.get("/api/chats", async (req, res) => {
     try {
@@ -198,5 +228,5 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  return createServer(app);
+  return httpServer;
 }
