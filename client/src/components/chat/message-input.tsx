@@ -31,10 +31,11 @@ export function MessageInput({ username }: MessageInputProps) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/messages", username] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
       setContent("");
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("Message sending error:", error);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -74,6 +75,7 @@ export function MessageInput({ username }: MessageInputProps) {
             placeholder="Type your message..."
             className="resize-none"
             rows={1}
+            disabled={mutation.isPending}
           />
           <Button
             type="submit"

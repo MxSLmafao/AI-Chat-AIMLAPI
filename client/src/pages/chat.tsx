@@ -6,8 +6,8 @@ import { Message } from "@shared/schema";
 const DEFAULT_USERNAME = "user";
 
 export default function Chat() {
-  const { data: messages } = useQuery<Message[]>({
-    queryKey: ["/api/messages", DEFAULT_USERNAME],
+  const { data: messages, isError } = useQuery<Message[]>({
+    queryKey: ["/api/messages"],
   });
 
   return (
@@ -17,7 +17,11 @@ export default function Chat() {
       </header>
 
       <main className="flex-1 overflow-hidden flex flex-col">
-        <MessageList messages={messages || []} />
+        {isError ? (
+          <div className="p-4 text-destructive">Failed to load messages. Please try again.</div>
+        ) : (
+          <MessageList messages={messages || []} />
+        )}
         <MessageInput username={DEFAULT_USERNAME} />
       </main>
     </div>
