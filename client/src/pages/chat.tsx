@@ -11,7 +11,7 @@ export default function Chat() {
   const [selectedChatId, setSelectedChatId] = useState<number>(1); // Start with the default chat
 
   const { data: messages, isError } = useQuery<Message[]>({
-    queryKey: ["/api/chats", selectedChatId, "messages"],
+    queryKey: [`/api/chats/${selectedChatId}/messages`],
   });
 
   return (

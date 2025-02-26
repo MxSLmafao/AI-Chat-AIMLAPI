@@ -32,7 +32,7 @@ export function MessageInput({ username, chatId }: MessageInputProps) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       setContent("");
     },
     onError: (error: Error) => {
