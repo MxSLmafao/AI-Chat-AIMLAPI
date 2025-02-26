@@ -4,7 +4,7 @@ import { Chat } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MessageSquare } from "lucide-react";
+import { PlusCircle, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) {
   const [newChatTitle, setNewChatTitle] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { toast } = useToast();
 
   const { data: chats = [] } = useQuery<Chat[]>({
@@ -47,33 +48,55 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
   };
 
   return (
-    <div className="w-64 border-r bg-muted/50 p-4 flex flex-col gap-4">
-      <form onSubmit={handleCreateChat} className="flex gap-2">
-        <Input
-          value={newChatTitle}
-          onChange={(e) => setNewChatTitle(e.target.value)}
-          placeholder="New Chat Title"
-          className="flex-1"
-        />
-        <Button type="submit" size="icon" disabled={createChatMutation.isPending}>
-          <PlusCircle className="h-4 w-4" />
+    <div className={cn(
+      "border-r bg-muted/50 flex flex-col transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="flex justify-end p-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </Button>
-      </form>
+      </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2">
+      {!isCollapsed && (
+        <form onSubmit={handleCreateChat} className="flex gap-2 p-4">
+          <Input
+            value={newChatTitle}
+            onChange={(e) => setNewChatTitle(e.target.value)}
+            placeholder="New Chat Title"
+            className="flex-1"
+          />
+          <Button type="submit" size="icon" disabled={createChatMutation.isPending}>
+            <PlusCircle className="h-4 w-4" />
+          </Button>
+        </form>
+      )}
+
+      <div className="flex-1 overflow-y-auto space-y-2 p-2">
         {chats.map((chat) => (
           <button
             key={chat.id}
             onClick={() => onSelectChat(chat.id)}
             className={cn(
-              "w-full px-3 py-2 rounded-lg flex items-center gap-2 transition-colors",
+              "w-full rounded-lg flex items-center gap-2 transition-colors px-3 py-2",
               selectedChatId === chat.id
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted"
             )}
           >
-            <MessageSquare className="h-4 w-4" />
-            <span className="text-sm font-medium truncate">{chat.title}</span>
+            <MessageSquare className="h-4 w-4 flex-shrink-0" />
+            {!isCollapsed && (
+              <span className="text-sm font-medium truncate">{chat.title}</span>
+            )}
           </button>
         ))}
       </div>
