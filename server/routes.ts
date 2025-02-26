@@ -31,7 +31,8 @@ export async function registerRoutes(app: Express) {
     const userMessage = await storage.insertMessage({
       content: result.data.content,
       username: result.data.username,
-      role: "user"
+      role: "user",
+      model: result.data.model
     });
 
     try {
@@ -42,7 +43,7 @@ export async function registerRoutes(app: Express) {
           "Authorization": `Bearer ${AIML_API_KEY}`
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: result.data.model,
           messages: [{ role: "user", content: result.data.content }],
           temperature: 0.7,
           max_tokens: 500
@@ -59,7 +60,8 @@ export async function registerRoutes(app: Express) {
       const aiMessage = await storage.insertMessage({
         content: aiData.choices[0].message.content,
         username: result.data.username,
-        role: "assistant"
+        role: "assistant",
+        model: result.data.model
       });
 
       res.json([userMessage, aiMessage]);

@@ -34,6 +34,9 @@ export function MessageList({ messages }: MessageListProps) {
               <span className="font-medium">
                 {message.role === "assistant" ? "AI" : message.username}
               </span>
+              {message.role === "assistant" && (
+                <span className="text-xs opacity-70">via {message.model}</span>
+              )}
             </div>
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
