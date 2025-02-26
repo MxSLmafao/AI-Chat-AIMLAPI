@@ -35,6 +35,20 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/chats/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+      const chat = await storage.getChat(id);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+      res.json(chat);
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+      res.status(500).json({ error: "Failed to fetch chat" });
+    }
+  });
+
   app.post("/api/chats", async (req, res) => {
     const result = insertChatSchema.safeParse(req.body);
     if (!result.success) {

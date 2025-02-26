@@ -5,6 +5,7 @@ import { z } from "zod";
 export const chats = pgTable("chats", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  model: text("model").default("gpt-4o-mini").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -19,7 +20,8 @@ export const messages = pgTable("messages", {
 });
 
 export const insertChatSchema = createInsertSchema(chats).pick({
-  title: true
+  title: true,
+  model: true
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({

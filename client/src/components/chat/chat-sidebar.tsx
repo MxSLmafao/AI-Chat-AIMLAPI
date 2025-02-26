@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, MessageSquare, Menu, X, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getAvailableModels } from "@/lib/models";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +36,14 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) {
   const [newChatTitle, setNewChatTitle] = useState("");
+  const [newChatModel, setNewChatModel] = useState("gpt-4o-mini");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [chatToRename, setChatToRename] = useState<Chat | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
+  const models = getAvailableModels();
 
   useEffect(() => {
     setMounted(true);
@@ -44,13 +54,14 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
   });
 
   const createChatMutation = useMutation({
-    mutationFn: async (title: string) => {
-      const res = await apiRequest("POST", "/api/chats", { title });
+    mutationFn: async ({ title, model }: { title: string; model: string }) => {
+      const res = await apiRequest("POST", "/api/chats", { title, model });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (newChat) => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
       setNewChatTitle("");
+      onSelectChat(newChat.id);
     },
     onError: () => {
       toast({
@@ -106,7 +117,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
   const handleCreateChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (newChatTitle.trim() && !createChatMutation.isPending) {
-      createChatMutation.mutate(newChatTitle);
+      createChatMutation.mutate({ title: newChatTitle, model: newChatModel });
     }
   };
 
@@ -144,15 +155,28 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
       </div>
 
       {!isCollapsed && (
-        <form onSubmit={handleCreateChat} className="flex gap-2 p-4">
+        <form onSubmit={handleCreateChat} className="p-4 space-y-2">
           <Input
             value={newChatTitle}
             onChange={(e) => setNewChatTitle(e.target.value)}
             placeholder="New Chat Title"
-            className="flex-1"
           />
-          <Button type="submit" size="icon" disabled={createChatMutation.isPending}>
-            <PlusCircle className="h-4 w-4" />
+          <Select value={newChatModel} onValueChange={setNewChatModel}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a model" />
+            </SelectTrigger>
+            <SelectContent>
+              {models.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  <span className="font-medium">{model.name}</span>
+                  <span className="ml-2 text-muted-foreground">({model.provider})</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="submit" className="w-full" disabled={createChatMutation.isPending}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Create Chat
           </Button>
         </form>
       )}
@@ -174,7 +198,12 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
             >
               <MessageSquare className="h-4 w-4 flex-shrink-0" />
               {!isCollapsed && (
-                <span className="text-sm font-medium truncate">{chat.title}</span>
+                <div className="truncate">
+                  <div className="text-sm font-medium truncate">{chat.title}</div>
+                  <div className="text-xs opacity-70 truncate">
+                    {models.find(m => m.id === chat.model)?.name || chat.model}
+                  </div>
+                </div>
               )}
             </button>
             {!isCollapsed && (
