@@ -9,6 +9,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Chat} />
+      <Route path="/chat/:uuid" component={Chat} />
       <Route component={NotFound} />
     </Switch>
   );

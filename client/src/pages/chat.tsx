@@ -1,22 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useParams } from "wouter";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { Message } from "@shared/schema";
+import { Chat as ChatType, Message } from "@shared/schema";
 
 const DEFAULT_USERNAME = "user";
 
 export default function Chat() {
-  const [selectedChatId, setSelectedChatId] = useState<number>(1); // Start with the default chat
+  const [, setLocation] = useLocation();
+  const params = useParams<{ uuid?: string }>();
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+
+  const { data: chats } = useQuery<ChatType[]>({
+    queryKey: ["/api/chats"],
+  });
+
+  // If we have a UUID in the URL, fetch that chat
+  const { data: selectedChat } = useQuery<ChatType>({
+    queryKey: [`/api/chats/${params.uuid || ''}`],
+    enabled: !!params.uuid,
+  });
+
+  // If we don't have a UUID in the URL, use the first chat
+  useEffect(() => {
+    if (!params.uuid && chats?.length) {
+      setLocation(`/chat/${chats[0].uuid}`);
+    }
+  }, [params.uuid, chats, setLocation]);
+
+  // Update selectedChatId when selectedChat changes
+  useEffect(() => {
+    if (selectedChat) {
+      setSelectedChatId(selectedChat.id);
+    }
+  }, [selectedChat]);
 
   const { data: messages, isError } = useQuery<Message[]>({
     queryKey: [`/api/chats/${selectedChatId}/messages`],
+    enabled: !!selectedChatId,
   });
 
   return (
     <div className="flex h-screen bg-background">
-      <ChatSidebar selectedChatId={selectedChatId} onSelectChat={setSelectedChatId} />
+      <ChatSidebar 
+        selectedChatId={selectedChatId} 
+        onSelectChat={(chatId) => {
+          const chat = chats?.find(c => c.id === chatId);
+          if (chat) {
+            setLocation(`/chat/${chat.uuid}`);
+          }
+        }} 
+      />
 
       <div className="flex-1 flex flex-col">
         <header className="border-b p-4">
@@ -29,7 +65,9 @@ export default function Chat() {
           ) : (
             <MessageList messages={messages || []} />
           )}
-          <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
+          {selectedChatId && (
+            <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
+          )}
         </main>
       </div>
     </div>

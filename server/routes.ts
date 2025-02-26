@@ -10,7 +10,6 @@ if (!AIMLAPI_KEY) {
   throw new Error("AIMLAPI_KEY environment variable is required");
 }
 
-// Configure OpenAI with aimlapi.com base URL
 const openai = new OpenAI({
   apiKey: AIMLAPI_KEY,
   baseURL: "https://api.aimlapi.com/v1"
@@ -35,10 +34,18 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.get("/api/chats/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
+  app.get("/api/chats/:identifier", async (req, res) => {
+    const identifier = req.params.identifier;
     try {
-      const chat = await storage.getChat(id);
+      let chat;
+      // Try to parse as number first for backward compatibility
+      const id = parseInt(identifier);
+      if (!isNaN(id)) {
+        chat = await storage.getChat(id);
+      } else {
+        chat = await storage.getChatByUuid(identifier);
+      }
+
       if (!chat) {
         return res.status(404).json({ error: "Chat not found" });
       }

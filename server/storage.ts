@@ -1,10 +1,12 @@
 import { messages, type Message, type InsertMessage, type Chat, type InsertChat } from "@shared/schema";
+import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
   // Chat operations
   getChats(): Promise<Chat[]>;
   createChat(chat: InsertChat): Promise<Chat>;
   getChat(id: number): Promise<Chat | null>;
+  getChatByUuid(uuid: string): Promise<Chat | null>;
   updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat>;
   deleteChat(id: number): Promise<void>;
 
@@ -36,6 +38,7 @@ export class MemStorage implements IStorage {
   async createChat(chat: InsertChat): Promise<Chat> {
     const newChat: Chat = {
       id: this.currentChatId++,
+      uuid: uuidv4(),
       title: chat.title,
       model: chat.model,
       createdAt: new Date()
@@ -46,6 +49,10 @@ export class MemStorage implements IStorage {
 
   async getChat(id: number): Promise<Chat | null> {
     return this.chats.find(c => c.id === id) || null;
+  }
+
+  async getChatByUuid(uuid: string): Promise<Chat | null> {
+    return this.chats.find(c => c.uuid === uuid) || null;
   }
 
   async updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat> {
