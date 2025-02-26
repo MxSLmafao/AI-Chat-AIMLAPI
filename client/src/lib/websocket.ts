@@ -31,9 +31,12 @@ export const useConnection = create<ConnectionState>((set, get) => ({
     }
 
     try {
+      // Get the current URL's protocol and hostname
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws`;
+      const hostname = window.location.hostname;
+      // Keep any existing query parameters
+      const searchParams = new URLSearchParams(window.location.search);
+      const wsUrl = `${protocol}//${hostname}/ws${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
       console.log('Connecting to WebSocket:', wsUrl);
 
       const ws = new WebSocket(wsUrl);
