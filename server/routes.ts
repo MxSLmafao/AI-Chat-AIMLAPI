@@ -3,11 +3,18 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { sendMessageSchema } from "@shared/schema";
 import rateLimit from "express-rate-limit";
+import OpenAI from "openai";
 
 const AIML_API_KEY = process.env.AIMLAPI_KEY;
 if (!AIML_API_KEY) {
   throw new Error("AIMLAPI_KEY environment variable is required");
 }
+
+// Configure OpenAI with aimlapi.com base URL
+const openai = new OpenAI({
+  apiKey: AIML_API_KEY,
+  baseURL: "https://api.aimlapi.com/v1"
+});
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -36,29 +43,15 @@ export async function registerRoutes(app: Express) {
     });
 
     try {
-      const aiResponse = await fetch("https://api.aimlapi.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${AIML_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: result.data.model,
-          messages: [{ role: "user", content: result.data.content }],
-          temperature: 0.7,
-          max_tokens: 500
-        })
+      const completion = await openai.chat.completions.create({
+        model: result.data.model,
+        messages: [{ role: "user", content: result.data.content }],
+        temperature: 0.7,
+        max_tokens: 500
       });
 
-      if (!aiResponse.ok) {
-        const errorData = await aiResponse.text();
-        console.error("AI API error:", errorData);
-        throw new Error(`AI API error: ${aiResponse.status}`);
-      }
-
-      const aiData = await aiResponse.json();
       const aiMessage = await storage.insertMessage({
-        content: aiData.choices[0].message.content,
+        content: completion.choices[0].message.content,
         username: result.data.username,
         role: "assistant",
         model: result.data.model
