@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express) {
     app[method.toLowerCase()](path, handler);
   }
 
-  // Message routes - remains unchanged because it interacts with the OpenAI API and should not be altered based on the prompt
+  // Message routes
   app.post("/api/messages", limiter, async (req, res) => {
     const result = sendMessageSchema.safeParse(req.body);
     if (!result.success) {
@@ -140,8 +140,15 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      // Get the chat to use its model
-      const chat = await storage.getChat(result.data.chatId);
+      // Get the chat by UUID or ID
+      let chat;
+      const id = parseInt(String(result.data.chatId));
+      if (!isNaN(id)) {
+        chat = await storage.getChat(id);
+      } else {
+        chat = await storage.getChatByUuid(String(result.data.chatId));
+      }
+
       if (!chat) {
         return res.status(404).json({ error: "Chat not found" });
       }
@@ -151,7 +158,7 @@ export async function registerRoutes(app: Express) {
         username: result.data.username,
         role: "user",
         model: chat.model,
-        chatId: result.data.chatId
+        chatId: chat.id
       });
 
       try {
@@ -180,7 +187,7 @@ export async function registerRoutes(app: Express) {
           username: result.data.username,
           role: "assistant",
           model: chat.model,
-          chatId: result.data.chatId
+          chatId: chat.id
         });
 
         res.json([userMessage, aiMessage]);

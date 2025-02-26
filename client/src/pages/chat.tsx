@@ -65,8 +65,8 @@ export default function Chat() {
           ) : (
             <MessageList messages={messages} />
           )}
-          {selectedChatId && (
-            <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
+          {params.uuid && (
+            <MessageInput username={DEFAULT_USERNAME} chatId={params.uuid} />
           )}
         </main>
       </div>
