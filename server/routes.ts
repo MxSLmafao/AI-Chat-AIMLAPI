@@ -112,17 +112,23 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
+      // Get the chat to use its model
+      const chat = await storage.getChat(result.data.chatId);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+
       const userMessage = await storage.insertMessage({
         content: result.data.content,
         username: result.data.username,
         role: "user",
-        model: result.data.model,
+        model: chat.model,
         chatId: result.data.chatId
       });
 
       try {
         const completion = await openai.chat.completions.create({
-          model: result.data.model,
+          model: chat.model,
           messages: [
             {
               role: "system",
@@ -145,7 +151,7 @@ export async function registerRoutes(app: Express) {
           content: completion.choices[0].message.content,
           username: result.data.username,
           role: "assistant",
-          model: result.data.model,
+          model: chat.model,
           chatId: result.data.chatId
         });
 

@@ -26,7 +26,7 @@ export class MemStorage implements IStorage {
     this.currentChatId = 1;
 
     // Create a default chat
-    this.createChat({ title: "New Chat" });
+    this.createChat({ title: "New Chat", model: "gpt-4o-mini" });
   }
 
   async getChats(): Promise<Chat[]> {
@@ -37,6 +37,7 @@ export class MemStorage implements IStorage {
     const newChat: Chat = {
       id: this.currentChatId++,
       title: chat.title,
+      model: chat.model,
       createdAt: new Date()
     };
     this.chats.push(newChat);
@@ -74,7 +75,11 @@ export class MemStorage implements IStorage {
   async insertMessage(message: InsertMessage): Promise<Message> {
     const newMessage: Message = {
       id: this.currentMessageId++,
-      ...message,
+      chatId: message.chatId,
+      content: message.content,
+      role: message.role,
+      username: message.username,
+      model: message.model,
       timestamp: new Date()
     };
     this.messages.push(newMessage);
