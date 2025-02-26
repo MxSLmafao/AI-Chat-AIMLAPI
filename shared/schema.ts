@@ -41,7 +41,6 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export const sendMessageSchema = z.object({
   content: z.string().min(1),
   username: z.string().min(1),
-  model: z.string().default("gpt-4o-mini"),
   chatId: z.number()
 });
 
