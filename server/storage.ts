@@ -28,11 +28,11 @@ export class MemStorage implements IStorage {
     this.currentChatId = 1;
 
     // Create a default chat
-    this.createChat({ title: "New Chat", model: "gpt-4o-mini" });
+    this.createChat({ title: "New Chat", model: "gpt-4o-mini" }).catch(console.error);
   }
 
   async getChats(): Promise<Chat[]> {
-    return this.chats;
+    return [...this.chats].sort((a, b) => b.id - a.id);
   }
 
   async createChat(chat: InsertChat): Promise<Chat> {
@@ -40,7 +40,7 @@ export class MemStorage implements IStorage {
       id: this.currentChatId++,
       uuid: uuidv4(),
       title: chat.title,
-      model: chat.model || "gpt-4o-mini", // Provide default value
+      model: chat.model || "gpt-4o-mini",
       createdAt: new Date()
     };
     this.chats.push(newChat);
@@ -52,6 +52,7 @@ export class MemStorage implements IStorage {
   }
 
   async getChatByUuid(uuid: string): Promise<Chat | null> {
+    if (!uuid) return null;
     return this.chats.find(c => c.uuid === uuid) || null;
   }
 
@@ -63,7 +64,8 @@ export class MemStorage implements IStorage {
 
     const updatedChat = {
       ...existingChat,
-      ...chat
+      ...chat,
+      model: chat.model || existingChat.model
     };
 
     this.chats = this.chats.map(c => c.id === id ? updatedChat : c);
@@ -84,13 +86,18 @@ export class MemStorage implements IStorage {
       throw new Error("chatId is required");
     }
 
+    const chat = await this.getChat(message.chatId);
+    if (!chat) {
+      throw new Error("Chat not found");
+    }
+
     const newMessage: Message = {
       id: this.currentMessageId++,
       chatId: message.chatId,
       content: message.content,
       role: message.role,
       username: message.username,
-      model: message.model || "gpt-4o-mini", // Provide default value
+      model: message.model || chat.model,
       timestamp: new Date()
     };
     this.messages.push(newMessage);

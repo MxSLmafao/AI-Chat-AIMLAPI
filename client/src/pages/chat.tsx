@@ -11,9 +11,9 @@ const DEFAULT_USERNAME = "user";
 export default function Chat() {
   const [, setLocation] = useLocation();
   const params = useParams<{ uuid?: string }>();
-  const [selectedChatId, setSelectedChatId] = useState<number>(1); // Initialize with default chat ID
+  const [selectedChatId, setSelectedChatId] = useState<number>(1);
 
-  const { data: chats } = useQuery<ChatType[]>({
+  const { data: chats, isLoading: isChatsLoading } = useQuery<ChatType[]>({
     queryKey: ["/api/chats"],
   });
 
@@ -25,10 +25,10 @@ export default function Chat() {
 
   // If we don't have a UUID in the URL, use the first chat
   useEffect(() => {
-    if (!params.uuid && chats?.length) {
+    if (!params.uuid && chats?.length && !isChatsLoading) {
       setLocation(`/chat/${chats[0].uuid}`);
     }
-  }, [params.uuid, chats, setLocation]);
+  }, [params.uuid, chats, setLocation, isChatsLoading]);
 
   // Update selectedChatId when selectedChat changes
   useEffect(() => {
@@ -43,6 +43,10 @@ export default function Chat() {
     queryKey: [`/api/chats/${selectedChatId}/messages`],
     enabled: selectedChatId > 0,
   });
+
+  if (isChatsLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="flex h-screen bg-background">
