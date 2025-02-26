@@ -64,6 +64,9 @@ export async function registerRoutes(app: Express) {
 
     try {
       const chat = await storage.createChat(result.data);
+      if (!chat) {
+        return res.status(500).json({ error: "Failed to create chat" });
+      }
       res.json(chat);
     } catch (error) {
       console.error("Error creating chat:", error);
@@ -73,14 +76,20 @@ export async function registerRoutes(app: Express) {
 
   app.patch("/api/chats/:id", async (req, res) => {
     const id = parseInt(req.params.id);
-    const result = insertChatSchema.partial().safeParse(req.body);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid chat ID" });
+    }
 
+    const result = insertChatSchema.partial().safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({ error: "Invalid request" });
     }
 
     try {
       const chat = await storage.updateChat(id, result.data);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
       res.json(chat);
     } catch (error) {
       console.error("Error updating chat:", error);
@@ -90,6 +99,9 @@ export async function registerRoutes(app: Express) {
 
   app.delete("/api/chats/:id", async (req, res) => {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid chat ID" });
+    }
 
     try {
       await storage.deleteChat(id);
@@ -102,8 +114,12 @@ export async function registerRoutes(app: Express) {
 
   // Message routes
   app.get("/api/chats/:chatId/messages", async (req, res) => {
+    const chatId = parseInt(req.params.chatId);
+    if (isNaN(chatId)) {
+      return res.status(400).json({ error: "Invalid chat ID" });
+    }
+
     try {
-      const chatId = parseInt(req.params.chatId);
       const messages = await storage.getMessages(chatId);
       res.json(messages);
     } catch (error) {
@@ -134,6 +150,13 @@ export async function registerRoutes(app: Express) {
       });
 
       try {
+        // Get chat history for context
+        const chatHistory = await storage.getMessages(chat.id);
+        const messages = chatHistory.map(msg => ({
+          role: msg.role as "user" | "assistant" | "system",
+          content: msg.content
+        }));
+
         const completion = await openai.chat.completions.create({
           model: chat.model,
           messages: [
@@ -141,13 +164,14 @@ export async function registerRoutes(app: Express) {
               role: "system",
               content: "You are an AI assistant who knows everything."
             },
+            ...messages.slice(-5), // Include last 5 messages for context
             {
               role: "user",
               content: result.data.content
             }
           ],
           temperature: 0.7,
-          max_tokens: 500
+          max_tokens: 2048 // Increased from 500 to 2048
         });
 
         if (!completion.choices[0]?.message?.content) {

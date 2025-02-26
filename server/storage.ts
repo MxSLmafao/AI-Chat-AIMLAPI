@@ -36,27 +36,44 @@ export class MemStorage implements IStorage {
   }
 
   async createChat(chat: InsertChat): Promise<Chat> {
+    if (!chat.title?.trim()) {
+      throw new Error("Chat title is required");
+    }
+
     const newChat: Chat = {
       id: this.currentChatId++,
       uuid: uuidv4(),
-      title: chat.title,
+      title: chat.title.trim(),
       model: chat.model || "gpt-4o-mini",
       createdAt: new Date()
     };
+
+    // Verify UUID uniqueness
+    if (this.chats.some(c => c.uuid === newChat.uuid)) {
+      newChat.uuid = uuidv4(); // Generate a new UUID if duplicate
+    }
+
     this.chats.push(newChat);
-    return newChat;
+    return { ...newChat }; // Return a copy to prevent mutation
   }
 
   async getChat(id: number): Promise<Chat | null> {
-    return this.chats.find(c => c.id === id) || null;
+    if (isNaN(id) || id < 1) return null;
+    const chat = this.chats.find(c => c.id === id);
+    return chat ? { ...chat } : null; // Return a copy to prevent mutation
   }
 
   async getChatByUuid(uuid: string): Promise<Chat | null> {
-    if (!uuid) return null;
-    return this.chats.find(c => c.uuid === uuid) || null;
+    if (!uuid?.trim()) return null;
+    const chat = this.chats.find(c => c.uuid === uuid.trim());
+    return chat ? { ...chat } : null; // Return a copy to prevent mutation
   }
 
   async updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat> {
+    if (isNaN(id) || id < 1) {
+      throw new Error("Invalid chat ID");
+    }
+
     const existingChat = await this.getChat(id);
     if (!existingChat) {
       throw new Error("Chat not found");
@@ -64,26 +81,41 @@ export class MemStorage implements IStorage {
 
     const updatedChat = {
       ...existingChat,
-      ...chat,
+      title: chat.title?.trim() || existingChat.title,
       model: chat.model || existingChat.model
     };
 
     this.chats = this.chats.map(c => c.id === id ? updatedChat : c);
-    return updatedChat;
+    return { ...updatedChat }; // Return a copy to prevent mutation
   }
 
   async deleteChat(id: number): Promise<void> {
+    if (isNaN(id) || id < 1) {
+      throw new Error("Invalid chat ID");
+    }
+
+    const chatExists = this.chats.some(c => c.id === id);
+    if (!chatExists) {
+      throw new Error("Chat not found");
+    }
+
     this.chats = this.chats.filter(c => c.id !== id);
     this.messages = this.messages.filter(m => m.chatId !== id);
   }
 
   async getMessages(chatId: number): Promise<Message[]> {
-    return this.messages.filter(m => m.chatId === chatId);
+    if (isNaN(chatId) || chatId < 1) {
+      throw new Error("Invalid chat ID");
+    }
+
+    return [...this.messages]
+      .filter(m => m.chatId === chatId)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
   async insertMessage(message: InsertMessage): Promise<Message> {
-    if (!message.chatId) {
-      throw new Error("chatId is required");
+    if (!message.chatId || isNaN(message.chatId) || message.chatId < 1) {
+      throw new Error("Invalid chat ID");
     }
 
     const chat = await this.getChat(message.chatId);
@@ -91,17 +123,22 @@ export class MemStorage implements IStorage {
       throw new Error("Chat not found");
     }
 
+    if (!message.content?.trim()) {
+      throw new Error("Message content is required");
+    }
+
     const newMessage: Message = {
       id: this.currentMessageId++,
       chatId: message.chatId,
-      content: message.content,
+      content: message.content.trim(),
       role: message.role,
       username: message.username,
       model: message.model || chat.model,
       timestamp: new Date()
     };
+
     this.messages.push(newMessage);
-    return newMessage;
+    return { ...newMessage }; // Return a copy to prevent mutation
   }
 }
 
