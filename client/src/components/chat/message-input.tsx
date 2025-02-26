@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface MessageInputProps {
   username: string;
-  chatId: string; // Changed to string to accommodate UUID
+  chatId: number;
 }
 
 export function MessageInput({ username, chatId }: MessageInputProps) {
@@ -26,7 +26,7 @@ export function MessageInput({ username, chatId }: MessageInputProps) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] }); // Using chatId here as well for consistency,  assuming uuid is part of api response
+      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       setContent("");
     },
     onError: (error: Error) => {
@@ -42,7 +42,7 @@ export function MessageInput({ username, chatId }: MessageInputProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (content.trim() && !mutation.isPending && chat) {
-      mutation.mutate({ content, username, chatId }); //Sending chatId as it is still used in the backend API
+      mutation.mutate({ content, username, model: chat.model, chatId });
     }
   };
 

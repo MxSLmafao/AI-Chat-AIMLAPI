@@ -23,116 +23,95 @@ const limiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express) {
-  const chatRoutes = {
-    // Chat routes
-    "GET /api/chats": async (req, res) => {
-      try {
-        const chats = await storage.getChats();
-        res.json(chats);
-      } catch (error) {
-        console.error("Error fetching chats:", error);
-        res.status(500).json({ error: "Failed to fetch chats" });
-      }
-    },
-
-    "GET /api/chats/:identifier": async (req, res) => {
-      const identifier = req.params.identifier;
-      try {
-        let chat;
-        // Try to parse as number first for backward compatibility
-        const id = parseInt(identifier);
-        if (!isNaN(id)) {
-          chat = await storage.getChat(id);
-        } else {
-          chat = await storage.getChatByUuid(identifier);
-        }
-
-        if (!chat) {
-          return res.status(404).json({ error: "Chat not found" });
-        }
-        res.json(chat);
-      } catch (error) {
-        console.error("Error fetching chat:", error);
-        res.status(500).json({ error: "Failed to fetch chat" });
-      }
-    },
-    "GET /api/chats/:identifier/messages": async (req, res) => {
-      try {
-        const identifier = req.params.identifier;
-        let chat;
-
-        // Try to parse as number first
-        const id = parseInt(identifier);
-        if (!isNaN(id)) {
-          chat = await storage.getChat(id);
-        } else {
-          chat = await storage.getChatByUuid(identifier);
-        }
-
-        if (!chat) {
-          return res.status(404).json({ error: "Chat not found" });
-        }
-
-        const messages = await storage.getMessages(chat.id);
-        res.json(messages);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        res.status(500).json({ error: "Failed to fetch messages" });
-      }
-    },
-
-    "POST /api/chats": async (req, res) => {
-      const result = insertChatSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: "Invalid request" });
-      }
-
-      try {
-        const chat = await storage.createChat(result.data);
-        res.json(chat);
-      } catch (error) {
-        console.error("Error creating chat:", error);
-        res.status(500).json({ error: "Failed to create chat" });
-      }
-    },
-
-    "PATCH /api/chats/:id": async (req, res) => {
-      const id = parseInt(req.params.id);
-      const result = insertChatSchema.partial().safeParse(req.body);
-
-      if (!result.success) {
-        return res.status(400).json({ error: "Invalid request" });
-      }
-
-      try {
-        const chat = await storage.updateChat(id, result.data);
-        res.json(chat);
-      } catch (error) {
-        console.error("Error updating chat:", error);
-        res.status(500).json({ error: "Failed to update chat" });
-      }
-    },
-
-    "DELETE /api/chats/:id": async (req, res) => {
-      const id = parseInt(req.params.id);
-
-      try {
-        await storage.deleteChat(id);
-        res.sendStatus(204);
-      } catch (error) {
-        console.error("Error deleting chat:", error);
-        res.status(500).json({ error: "Failed to delete chat" });
-      }
+  // Chat routes
+  app.get("/api/chats", async (req, res) => {
+    try {
+      const chats = await storage.getChats();
+      res.json(chats);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+      res.status(500).json({ error: "Failed to fetch chats" });
     }
-  };
+  });
 
-  // Register routes
-  for (const [route, handler] of Object.entries(chatRoutes)) {
-    const [method, path] = route.split(" ");
-    app[method.toLowerCase()](path, handler);
-  }
+  app.get("/api/chats/:identifier", async (req, res) => {
+    const identifier = req.params.identifier;
+    try {
+      let chat;
+      // Try to parse as number first for backward compatibility
+      const id = parseInt(identifier);
+      if (!isNaN(id)) {
+        chat = await storage.getChat(id);
+      } else {
+        chat = await storage.getChatByUuid(identifier);
+      }
+
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+      res.json(chat);
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+      res.status(500).json({ error: "Failed to fetch chat" });
+    }
+  });
+
+  app.post("/api/chats", async (req, res) => {
+    const result = insertChatSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    try {
+      const chat = await storage.createChat(result.data);
+      res.json(chat);
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      res.status(500).json({ error: "Failed to create chat" });
+    }
+  });
+
+  app.patch("/api/chats/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const result = insertChatSchema.partial().safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    try {
+      const chat = await storage.updateChat(id, result.data);
+      res.json(chat);
+    } catch (error) {
+      console.error("Error updating chat:", error);
+      res.status(500).json({ error: "Failed to update chat" });
+    }
+  });
+
+  app.delete("/api/chats/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+
+    try {
+      await storage.deleteChat(id);
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      res.status(500).json({ error: "Failed to delete chat" });
+    }
+  });
 
   // Message routes
+  app.get("/api/chats/:chatId/messages", async (req, res) => {
+    try {
+      const chatId = parseInt(req.params.chatId);
+      const messages = await storage.getMessages(chatId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   app.post("/api/messages", limiter, async (req, res) => {
     const result = sendMessageSchema.safeParse(req.body);
     if (!result.success) {
@@ -140,15 +119,8 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      // Get the chat by UUID or ID
-      let chat;
-      const id = parseInt(String(result.data.chatId));
-      if (!isNaN(id)) {
-        chat = await storage.getChat(id);
-      } else {
-        chat = await storage.getChatByUuid(String(result.data.chatId));
-      }
-
+      // Get the chat to use its model
+      const chat = await storage.getChat(result.data.chatId);
       if (!chat) {
         return res.status(404).json({ error: "Chat not found" });
       }
@@ -158,7 +130,7 @@ export async function registerRoutes(app: Express) {
         username: result.data.username,
         role: "user",
         model: chat.model,
-        chatId: chat.id
+        chatId: result.data.chatId
       });
 
       try {
@@ -187,7 +159,7 @@ export async function registerRoutes(app: Express) {
           username: result.data.username,
           role: "assistant",
           model: chat.model,
-          chatId: chat.id
+          chatId: result.data.chatId
         });
 
         res.json([userMessage, aiMessage]);
