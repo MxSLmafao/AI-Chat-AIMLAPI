@@ -6,6 +6,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Enable trust proxy for rate limiter to work correctly behind Replit's proxy
+app.set('trust proxy', 1);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -47,17 +50,12 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
   const port = 5000;
   server.listen({
     port,

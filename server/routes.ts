@@ -4,11 +4,16 @@ import { storage } from "./storage";
 import { sendMessageSchema } from "@shared/schema";
 import rateLimit from "express-rate-limit";
 
-const AIML_API_KEY = process.env.AIML_API_KEY || "demo";
+const AIML_API_KEY = process.env.AIMLAPI_KEY;
+if (!AIML_API_KEY) {
+  throw new Error("AIMLAPI_KEY environment variable is required");
+}
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 20
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 export async function registerRoutes(app: Express) {
@@ -30,7 +35,7 @@ export async function registerRoutes(app: Express) {
     });
 
     try {
-      const aiResponse = await fetch("https://api.aiml.services/openai/v1/chat/completions", {
+      const aiResponse = await fetch("https://api.aimlapi.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,12 +43,16 @@ export async function registerRoutes(app: Express) {
         },
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: result.data.content }]
+          messages: [{ role: "user", content: result.data.content }],
+          temperature: 0.7,
+          max_tokens: 500
         })
       });
 
       if (!aiResponse.ok) {
-        throw new Error("AI API error");
+        const errorData = await aiResponse.text();
+        console.error("AI API error:", errorData);
+        throw new Error(`AI API error: ${aiResponse.status}`);
       }
 
       const aiData = await aiResponse.json();
