@@ -5,6 +5,8 @@ export interface IStorage {
   getChats(): Promise<Chat[]>;
   createChat(chat: InsertChat): Promise<Chat>;
   getChat(id: number): Promise<Chat | null>;
+  updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat>;
+  deleteChat(id: number): Promise<void>;
 
   // Message operations
   getMessages(chatId: number): Promise<Message[]>;
@@ -43,6 +45,26 @@ export class MemStorage implements IStorage {
 
   async getChat(id: number): Promise<Chat | null> {
     return this.chats.find(c => c.id === id) || null;
+  }
+
+  async updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat> {
+    const existingChat = await this.getChat(id);
+    if (!existingChat) {
+      throw new Error("Chat not found");
+    }
+
+    const updatedChat = {
+      ...existingChat,
+      ...chat
+    };
+
+    this.chats = this.chats.map(c => c.id === id ? updatedChat : c);
+    return updatedChat;
+  }
+
+  async deleteChat(id: number): Promise<void> {
+    this.chats = this.chats.filter(c => c.id !== id);
+    this.messages = this.messages.filter(m => m.chatId !== id);
   }
 
   async getMessages(chatId: number): Promise<Message[]> {

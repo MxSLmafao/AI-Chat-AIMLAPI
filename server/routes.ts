@@ -50,6 +50,35 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.patch("/api/chats/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const result = insertChatSchema.partial().safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    try {
+      const chat = await storage.updateChat(id, result.data);
+      res.json(chat);
+    } catch (error) {
+      console.error("Error updating chat:", error);
+      res.status(500).json({ error: "Failed to update chat" });
+    }
+  });
+
+  app.delete("/api/chats/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+
+    try {
+      await storage.deleteChat(id);
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      res.status(500).json({ error: "Failed to delete chat" });
+    }
+  });
+
   // Message routes
   app.get("/api/chats/:chatId/messages", async (req, res) => {
     try {
@@ -85,9 +114,9 @@ export async function registerRoutes(app: Express) {
               role: "system",
               content: "You are an AI assistant who knows everything."
             },
-            { 
-              role: "user", 
-              content: result.data.content 
+            {
+              role: "user",
+              content: result.data.content
             }
           ],
           temperature: 0.7,
