@@ -13,7 +13,7 @@ export default function Chat() {
   const params = useParams<{ uuid?: string }>();
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
 
-  const { data: chats } = useQuery<ChatType[]>({
+  const { data: chats = [] } = useQuery<ChatType[]>({
     queryKey: ["/api/chats"],
   });
 
@@ -37,15 +37,15 @@ export default function Chat() {
     }
   }, [selectedChat]);
 
-  const { data: messages, isError } = useQuery<Message[]>({
-    queryKey: [`/api/chats/${selectedChatId}/messages`],
-    enabled: !!selectedChatId,
+  const { data: messages = [], isError } = useQuery<Message[]>({
+    queryKey: [`/api/chats/${params.uuid}/messages`],
+    enabled: !!params.uuid,
   });
 
   return (
     <div className="flex h-screen bg-background">
       <ChatSidebar 
-        selectedChatId={selectedChatId} 
+        selectedChatId={selectedChatId || 0} 
         onSelectChat={(chatId) => {
           const chat = chats?.find(c => c.id === chatId);
           if (chat) {
@@ -63,7 +63,7 @@ export default function Chat() {
           {isError ? (
             <div className="p-4 text-destructive">Failed to load messages. Please try again.</div>
           ) : (
-            <MessageList messages={messages || []} />
+            <MessageList messages={messages} />
           )}
           {selectedChatId && (
             <MessageInput username={DEFAULT_USERNAME} chatId={selectedChatId} />
