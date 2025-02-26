@@ -40,33 +40,34 @@ export class MemStorage implements IStorage {
       throw new Error("Chat title is required");
     }
 
+    let uuid = uuidv4();
+    // Ensure UUID uniqueness
+    while (this.chats.some(c => c.uuid === uuid)) {
+      uuid = uuidv4();
+    }
+
     const newChat: Chat = {
       id: this.currentChatId++,
-      uuid: uuidv4(),
+      uuid,
       title: chat.title.trim(),
       model: chat.model || "gpt-4o-mini",
       createdAt: new Date()
     };
 
-    // Verify UUID uniqueness
-    if (this.chats.some(c => c.uuid === newChat.uuid)) {
-      newChat.uuid = uuidv4(); // Generate a new UUID if duplicate
-    }
-
-    this.chats.push(newChat);
+    this.chats.push({ ...newChat });
     return { ...newChat }; // Return a copy to prevent mutation
   }
 
   async getChat(id: number): Promise<Chat | null> {
     if (isNaN(id) || id < 1) return null;
     const chat = this.chats.find(c => c.id === id);
-    return chat ? { ...chat } : null; // Return a copy to prevent mutation
+    return chat ? { ...chat } : null;
   }
 
   async getChatByUuid(uuid: string): Promise<Chat | null> {
     if (!uuid?.trim()) return null;
     const chat = this.chats.find(c => c.uuid === uuid.trim());
-    return chat ? { ...chat } : null; // Return a copy to prevent mutation
+    return chat ? { ...chat } : null;
   }
 
   async updateChat(id: number, chat: Partial<InsertChat>): Promise<Chat> {
@@ -85,8 +86,9 @@ export class MemStorage implements IStorage {
       model: chat.model || existingChat.model
     };
 
-    this.chats = this.chats.map(c => c.id === id ? updatedChat : c);
-    return { ...updatedChat }; // Return a copy to prevent mutation
+    // Ensure we're not accidentally mutating the original chat
+    this.chats = this.chats.map(c => c.id === id ? { ...updatedChat } : c);
+    return { ...updatedChat };
   }
 
   async deleteChat(id: number): Promise<void> {
@@ -106,6 +108,11 @@ export class MemStorage implements IStorage {
   async getMessages(chatId: number): Promise<Message[]> {
     if (isNaN(chatId) || chatId < 1) {
       throw new Error("Invalid chat ID");
+    }
+
+    const chat = await this.getChat(chatId);
+    if (!chat) {
+      throw new Error("Chat not found");
     }
 
     return [...this.messages]
@@ -137,7 +144,7 @@ export class MemStorage implements IStorage {
       timestamp: new Date()
     };
 
-    this.messages.push(newMessage);
+    this.messages.push({ ...newMessage });
     return { ...newMessage }; // Return a copy to prevent mutation
   }
 }
