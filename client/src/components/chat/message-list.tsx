@@ -1,6 +1,6 @@
 import { Message } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { Bot } from "lucide-react";
 
 interface MessageListProps {
   messages: Message[];
@@ -26,13 +26,9 @@ export function MessageList({ messages }: MessageListProps) {
             )}
           >
             <div className="flex items-center gap-2 mb-2">
-              {message.role === "assistant" ? (
-                <Bot className="h-4 w-4" />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
+              {message.role === "assistant" && <Bot className="h-4 w-4" />}
               <span className="font-medium">
-                {message.role === "assistant" ? "AI" : message.username}
+                {message.role === "assistant" ? "AI" : "You"}
               </span>
               {message.role === "assistant" && (
                 <span className="text-xs opacity-70">via {message.model}</span>
