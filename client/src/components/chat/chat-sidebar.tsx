@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Chat } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -32,7 +32,12 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [chatToRename, setChatToRename] = useState<Chat | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: chats = [] } = useQuery<Chat[]>({
     queryKey: ["/api/chats"],
@@ -196,28 +201,30 @@ export function ChatSidebar({ selectedChatId, onSelectChat }: ChatSidebarProps) 
         ))}
       </div>
 
-      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Chat</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleRename} className="space-y-4">
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Enter new title"
-            />
-            <DialogFooter>
-              <Button
-                type="submit"
-                disabled={renameChatMutation.isPending || !newTitle.trim()}
-              >
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {mounted && (
+        <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleRename} className="space-y-4">
+              <Input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Enter new title"
+              />
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={renameChatMutation.isPending || !newTitle.trim()}
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
