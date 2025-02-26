@@ -8,7 +8,7 @@ export const messages = pgTable("messages", {
   role: text("role", { enum: ["user", "assistant"] }).notNull(),
   username: text("username").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-  model: text("model").default("gpt-3.5-turbo").notNull()
+  model: text("model").default("gpt-4o-mini").notNull()
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
@@ -24,7 +24,7 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export const sendMessageSchema = z.object({
   content: z.string().min(1),
   username: z.string().min(1),
-  model: z.string().default("gpt-3.5-turbo")
+  model: z.string().default("gpt-4o-mini")
 });
 
 export type SendMessageRequest = z.infer<typeof sendMessageSchema>;

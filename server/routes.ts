@@ -45,13 +45,22 @@ export async function registerRoutes(app: Express) {
     try {
       const completion = await openai.chat.completions.create({
         model: result.data.model,
-        messages: [{ role: "user", content: result.data.content }],
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI assistant who knows everything."
+          },
+          { 
+            role: "user", 
+            content: result.data.content 
+          }
+        ],
         temperature: 0.7,
         max_tokens: 500
       });
 
       const aiMessage = await storage.insertMessage({
-        content: completion.choices[0].message.content,
+        content: completion.choices[0].message.content || "",
         username: result.data.username,
         role: "assistant",
         model: result.data.model

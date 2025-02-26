@@ -21,7 +21,7 @@ interface MessageInputProps {
 
 export function MessageInput({ username }: MessageInputProps) {
   const [content, setContent] = useState("");
-  const [model, setModel] = useState("gpt-3.5-turbo");
+  const [model, setModel] = useState("gpt-4o-mini");
   const { toast } = useToast();
   const models = getAvailableModels();
 
