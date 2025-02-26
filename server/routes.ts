@@ -35,14 +35,14 @@ export async function registerRoutes(app: Express) {
       return res.status(400).json({ error: "Invalid request" });
     }
 
-    const userMessage = await storage.insertMessage({
-      content: result.data.content,
-      username: result.data.username,
-      role: "user",
-      model: result.data.model
-    });
-
     try {
+      const userMessage = await storage.insertMessage({
+        content: result.data.content,
+        username: result.data.username,
+        role: "user",
+        model: result.data.model
+      });
+
       const completion = await openai.chat.completions.create({
         model: result.data.model,
         messages: [
@@ -59,8 +59,12 @@ export async function registerRoutes(app: Express) {
         max_tokens: 500
       });
 
+      if (!completion.choices[0]?.message?.content) {
+        throw new Error("No response from AI");
+      }
+
       const aiMessage = await storage.insertMessage({
-        content: completion.choices[0].message.content || "",
+        content: completion.choices[0].message.content,
         username: result.data.username,
         role: "assistant",
         model: result.data.model
