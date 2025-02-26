@@ -17,9 +17,10 @@ import { getAvailableModels } from "@/lib/models";
 
 interface MessageInputProps {
   username: string;
+  chatId: number;
 }
 
-export function MessageInput({ username }: MessageInputProps) {
+export function MessageInput({ username, chatId }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [model, setModel] = useState("gpt-4o-mini");
   const { toast } = useToast();
@@ -31,7 +32,7 @@ export function MessageInput({ username }: MessageInputProps) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
       setContent("");
     },
     onError: (error: Error) => {
@@ -47,7 +48,7 @@ export function MessageInput({ username }: MessageInputProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (content.trim() && !mutation.isPending) {
-      mutation.mutate({ content, username, model });
+      mutation.mutate({ content, username, model, chatId });
     }
   };
 

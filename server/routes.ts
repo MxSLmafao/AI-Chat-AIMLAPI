@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { sendMessageSchema } from "@shared/schema";
+import { sendMessageSchema, insertChatSchema } from "@shared/schema";
 import rateLimit from "express-rate-limit";
 import OpenAI from "openai";
 
@@ -24,9 +24,37 @@ const limiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express) {
-  app.get("/api/messages", async (req, res) => {
+  // Chat routes
+  app.get("/api/chats", async (req, res) => {
     try {
-      const messages = await storage.getMessages("user");
+      const chats = await storage.getChats();
+      res.json(chats);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+      res.status(500).json({ error: "Failed to fetch chats" });
+    }
+  });
+
+  app.post("/api/chats", async (req, res) => {
+    const result = insertChatSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    try {
+      const chat = await storage.createChat(result.data);
+      res.json(chat);
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      res.status(500).json({ error: "Failed to create chat" });
+    }
+  });
+
+  // Message routes
+  app.get("/api/chats/:chatId/messages", async (req, res) => {
+    try {
+      const chatId = parseInt(req.params.chatId);
+      const messages = await storage.getMessages(chatId);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -45,7 +73,8 @@ export async function registerRoutes(app: Express) {
         content: result.data.content,
         username: result.data.username,
         role: "user",
-        model: result.data.model
+        model: result.data.model,
+        chatId: result.data.chatId
       });
 
       try {
@@ -73,7 +102,8 @@ export async function registerRoutes(app: Express) {
           content: completion.choices[0].message.content,
           username: result.data.username,
           role: "assistant",
-          model: result.data.model
+          model: result.data.model,
+          chatId: result.data.chatId
         });
 
         res.json([userMessage, aiMessage]);
